@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-28
+
+### Changed
+
+- Graduate from the Asm198x workspace into the neutral Isa198x project and
+  publish as `isa198x`. The version restarts at 0.1.0 because the earlier
+  0.0.x numbers were Asm198x workspace checkpoints.
+
 ## [0.0.35](https://github.com/asm198x/asm198x/compare/isa-v0.0.34...isa-v0.0.35) - 2026-08-27
 
 ### Added

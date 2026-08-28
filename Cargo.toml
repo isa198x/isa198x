@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = ["crates/isa", "crates/isa-disasm"]
+default-members = ["crates/isa", "crates/isa-disasm"]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+license = "GPL-2.0-or-later"
+repository = "https://github.com/isa198x/isa198x"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+unwrap_used = "deny"
+
+[profile.dev]
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
