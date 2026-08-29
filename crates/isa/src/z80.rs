@@ -44,8 +44,9 @@
 //! over every register slot), **and the complete `DD`/`FD` (IX/IY) group**:
 //! 16-bit index ops, `(IX+d)`/`(IY+d)` load/store/ALU/INC/DEC, the two-operand
 //! `LD (IX+d),n`, and the `DD CB`/`FD CB` bit/rotate forms. The **documented**
-//! Z80 is complete; the undocumented IXH/IXL half-registers and SLL `(IX+d)` are
-//! omitted, and the Spectrum Next's Z80N opcodes are a separate extension.
+//! Z80 is complete, including the widely supported undocumented IXH/IXL and
+//! IYH/IYL half-register forms. Undocumented SLL `(IX+d)` remains omitted, and
+//! the Spectrum Next's Z80N opcodes are a separate extension.
 
 use crate::{Cycles, Endianness, Form, Instruction, InstructionSet, Operand, OperandKind};
 
@@ -850,9 +851,89 @@ const INSTRUCTIONS: &[Instruction] = &[
     // ===================== DD prefix (IX) / FD prefix (IY) =====================
     // The index-register group. A mnemonic's IX/IY forms live on their own
     // entries (find_form scans all entries with a mnemonic), keeping this group
-    // readable. The undocumented IXH/IXL/IYH/IYL half-register ops are omitted,
-    // as is the undocumented SLL (IX+d)/(IY+d). DD CB / FD CB forms carry the
+    // readable. The undocumented SLL (IX+d)/(IY+d) is omitted. DD CB / FD CB forms carry the
     // displacement before a trailing opcode byte (see form_ddcb).
+
+    // --- Undocumented IX byte halves (DD) ---
+    inst!("LD", "Load IX byte halves", [
+        form_u(&[0xDD, 0x44], "B,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x45], "B,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x4C], "C,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x4D], "C,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x54], "D,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x55], "D,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x5C], "E,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x5D], "E,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x60], "IXH,B", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x61], "IXH,C", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x62], "IXH,D", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x63], "IXH,E", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x64], "IXH,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x65], "IXH,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x67], "IXH,A", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x68], "IXL,B", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x69], "IXL,C", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x6A], "IXL,D", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x6B], "IXL,E", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x6C], "IXL,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x6D], "IXL,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x6F], "IXL,A", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x7C], "A,IXH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x7D], "A,IXL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xDD, 0x26], "IXH,n", ONE_N, Cycles::fixed(11), ""),
+        form_u(&[0xDD, 0x2E], "IXL,n", ONE_N, Cycles::fixed(11), ""),
+    ]),
+    inst!("INC", "Increment IX byte halves", [form_u(&[0xDD, 0x24], "IXH", NONE, Cycles::fixed(8), "SZHPN"), form_u(&[0xDD, 0x2C], "IXL", NONE, Cycles::fixed(8), "SZHPN")]),
+    inst!("DEC", "Decrement IX byte halves", [form_u(&[0xDD, 0x25], "IXH", NONE, Cycles::fixed(8), "SZHPN"), form_u(&[0xDD, 0x2D], "IXL", NONE, Cycles::fixed(8), "SZHPN")]),
+    inst!("ADD", "ADD IX byte halves", [form_u(&[0xDD, 0x84], "A,IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0x85], "A,IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("ADC", "ADC IX byte halves", [form_u(&[0xDD, 0x8C], "A,IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0x8D], "A,IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("SUB", "SUB IX byte halves", [form_u(&[0xDD, 0x94], "IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0x95], "IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("SBC", "SBC IX byte halves", [form_u(&[0xDD, 0x9C], "A,IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0x9D], "A,IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("AND", "AND IX byte halves", [form_u(&[0xDD, 0xA4], "IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0xA5], "IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("XOR", "XOR IX byte halves", [form_u(&[0xDD, 0xAC], "IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0xAD], "IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("OR", "OR IX byte halves", [form_u(&[0xDD, 0xB4], "IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0xB5], "IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("CP", "CP IX byte halves", [form_u(&[0xDD, 0xBC], "IXH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xDD, 0xBD], "IXL", NONE, Cycles::fixed(8), "SZHPNC")]),
+
+    // --- Undocumented IY byte halves (FD) ---
+    inst!("LD", "Load IY byte halves", [
+        form_u(&[0xFD, 0x44], "B,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x45], "B,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x4C], "C,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x4D], "C,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x54], "D,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x55], "D,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x5C], "E,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x5D], "E,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x60], "IYH,B", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x61], "IYH,C", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x62], "IYH,D", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x63], "IYH,E", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x64], "IYH,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x65], "IYH,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x67], "IYH,A", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x68], "IYL,B", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x69], "IYL,C", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x6A], "IYL,D", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x6B], "IYL,E", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x6C], "IYL,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x6D], "IYL,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x6F], "IYL,A", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x7C], "A,IYH", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x7D], "A,IYL", NONE, Cycles::fixed(8), ""),
+        form_u(&[0xFD, 0x26], "IYH,n", ONE_N, Cycles::fixed(11), ""),
+        form_u(&[0xFD, 0x2E], "IYL,n", ONE_N, Cycles::fixed(11), ""),
+    ]),
+    inst!("INC", "Increment IY byte halves", [form_u(&[0xFD, 0x24], "IYH", NONE, Cycles::fixed(8), "SZHPN"), form_u(&[0xFD, 0x2C], "IYL", NONE, Cycles::fixed(8), "SZHPN")]),
+    inst!("DEC", "Decrement IY byte halves", [form_u(&[0xFD, 0x25], "IYH", NONE, Cycles::fixed(8), "SZHPN"), form_u(&[0xFD, 0x2D], "IYL", NONE, Cycles::fixed(8), "SZHPN")]),
+    inst!("ADD", "ADD IY byte halves", [form_u(&[0xFD, 0x84], "A,IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0x85], "A,IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("ADC", "ADC IY byte halves", [form_u(&[0xFD, 0x8C], "A,IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0x8D], "A,IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("SUB", "SUB IY byte halves", [form_u(&[0xFD, 0x94], "IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0x95], "IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("SBC", "SBC IY byte halves", [form_u(&[0xFD, 0x9C], "A,IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0x9D], "A,IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("AND", "AND IY byte halves", [form_u(&[0xFD, 0xA4], "IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0xA5], "IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("XOR", "XOR IY byte halves", [form_u(&[0xFD, 0xAC], "IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0xAD], "IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("OR", "OR IY byte halves", [form_u(&[0xFD, 0xB4], "IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0xB5], "IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+    inst!("CP", "CP IY byte halves", [form_u(&[0xFD, 0xBC], "IYH", NONE, Cycles::fixed(8), "SZHPNC"), form_u(&[0xFD, 0xBD], "IYL", NONE, Cycles::fixed(8), "SZHPNC")]),
+
 
     // --- IX (DD) ---
     inst!("ADD", "Add to IX", [
@@ -1383,5 +1464,20 @@ mod tests {
         assert_eq!(bit.opcode, &[0xFD, 0xCB]);
         assert_eq!(bit.suffix, &[0x7E]);
         assert_eq!(bit.len(), 4); // FD CB d 7E
+
+        // Undocumented byte halves use the ordinary H/L opcode slots under
+        // the corresponding DD/FD prefix. These include the Rachel client form.
+        for (mnemonic, mode, opcode) in [
+            ("LD", "IXL,A", &[0xDD, 0x6F][..]),
+            ("LD", "B,IYH", &[0xFD, 0x44][..]),
+            ("LD", "IXH,n", &[0xDD, 0x26][..]),
+            ("INC", "IYL", &[0xFD, 0x2C][..]),
+            ("ADD", "A,IXH", &[0xDD, 0x84][..]),
+            ("CP", "IYL", &[0xFD, 0xBD][..]),
+        ] {
+            let form = SET.find_form(mnemonic, mode).expect(mode);
+            assert_eq!(form.opcode, opcode, "{mnemonic} {mode}");
+            assert!(form.undocumented, "{mnemonic} {mode}");
+        }
     }
 }
