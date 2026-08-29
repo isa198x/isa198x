@@ -536,15 +536,16 @@ mod row_tests {
     /// so a marked form stays marked through the seam.
     ///
     /// The two CPUs that declare undocumented rows treat them differently on
-    /// output, and deliberately: the Z80's `SLL` is a working instruction that
-    /// real software uses, so it disassembles; the 6809's three do not, so they
-    /// are input-only (`decisions/undocumented-opcodes-are-input-only.md`).
+    /// output, and deliberately: the Z80's `SLL` and index-register halves are
+    /// working instructions that real software uses, so they disassemble; the
+    /// 6809's three do not, so they are input-only
+    /// (`decisions/undocumented-opcodes-are-input-only.md`).
     /// The flag is the same either way — what a consumer does with it is the
     /// consumer's call.
     #[test]
     fn rows_carry_the_undocumented_marker() {
         let marked = crate::z80::SET.rows().filter(|r| r.undocumented).count();
-        assert_eq!(marked, 8, "the Z80 declares eight undocumented forms");
+        assert_eq!(marked, 100, "the Z80 declares 100 undocumented forms");
 
         let six = |name| {
             crate::mos6809::rows()

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Z80 index-register halves.** The Z80 specification now includes the
+  widely supported undocumented IXH, IXL, IYH, and IYL load, increment,
+  decrement, and arithmetic forms.
+
 ## [0.1.0] - 2026-08-28
 
 ### Changed
