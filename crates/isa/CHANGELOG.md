@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.0...isa198x-v0.1.1) - 2026-08-29
+
+### Added
+
+- *(z80)* specify index-register halves ([#2](https://github.com/isa198x/isa198x/pull/2))
+
 ### Added
 
 - **Z80 index-register halves.** The Z80 specification now includes the
