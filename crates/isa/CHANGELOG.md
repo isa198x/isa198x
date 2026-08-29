@@ -11,10 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- *(z80)* specify index-register halves ([#2](https://github.com/isa198x/isa198x/pull/2))
-
-### Added
-
 - **Z80 index-register halves.** The Z80 specification now includes the
   widely supported undocumented IXH, IXL, IYH, and IYL load, increment,
   decrement, and arithmetic forms.
