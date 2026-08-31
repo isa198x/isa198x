@@ -74,6 +74,23 @@ pub const PROVENANCE: &[Chip] = &[
         }],
     },
     Chip {
+        module: "mos65c02",
+        sources: &[
+            Source {
+                title: "Programming the 65816, including the 6502, 65C02 and 65802",
+                attribution: "David Eyes and Ron Lichty",
+                year: Some("1986"),
+                library: "by-topic/cpu-65816/",
+            },
+            Source {
+                title: "HuC6280 Software Manual",
+                attribution: "Hudson Soft",
+                year: None,
+                library: "by-topic/cpu-huc6280/",
+            },
+        ],
+    },
+    Chip {
         module: "mos65816",
         sources: &[Source {
             title: "Programming the 65816",
