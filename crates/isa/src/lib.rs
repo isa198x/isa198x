@@ -295,6 +295,7 @@ pub mod machines;
 pub mod mos6502;
 pub mod mos65816;
 pub mod mos6809;
+pub mod nmos6502_undocumented;
 pub mod pdp11;
 pub mod provenance;
 pub mod s2650;
