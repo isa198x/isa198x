@@ -65,6 +65,15 @@ pub const PROVENANCE: &[Chip] = &[
         ],
     },
     Chip {
+        module: "nmos6502_undocumented",
+        sources: &[Source {
+            title: "NMOS 6510 Unintended Opcodes: No More Secrets",
+            attribution: "groepaz/solution",
+            year: Some("2025"),
+            library: "by-topic/cpu-6510/",
+        }],
+    },
+    Chip {
         module: "mos65816",
         sources: &[Source {
             title: "Programming the 65816",
