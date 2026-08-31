@@ -132,7 +132,7 @@ const fn join<const A: usize, const B: usize, const N: usize>(
 }
 
 #[rustfmt::skip]
-const CMOS_INSTRUCTIONS: [Instruction; 20] = [
+pub(crate) const CMOS_INSTRUCTIONS: [Instruction; 20] = [
     inst!("PHX", "Push X", [form(&[0xDA], "implied", NONE, Cycles::fixed(3), "")]),
     inst!("PHY", "Push Y", [form(&[0x5A], "implied", NONE, Cycles::fixed(3), "")]),
     inst!("PLX", "Pull X", [form(&[0xFA], "implied", NONE, Cycles::fixed(4), "NZ")]),
@@ -171,7 +171,7 @@ const CMOS_INSTRUCTIONS: [Instruction; 20] = [
 ];
 
 #[rustfmt::skip]
-const ROCKWELL_ADDITIONS: [Instruction; 32] = [
+pub(crate) const ROCKWELL_ADDITIONS: [Instruction; 32] = [
     bit_zp!("RMB0", 0x07), bit_zp!("RMB1", 0x17), bit_zp!("RMB2", 0x27), bit_zp!("RMB3", 0x37),
     bit_zp!("RMB4", 0x47), bit_zp!("RMB5", 0x57), bit_zp!("RMB6", 0x67), bit_zp!("RMB7", 0x77),
     bit_zp!("SMB0", 0x87), bit_zp!("SMB1", 0x97), bit_zp!("SMB2", 0xA7), bit_zp!("SMB3", 0xB7),

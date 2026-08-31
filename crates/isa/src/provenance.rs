@@ -48,6 +48,15 @@ pub struct Chip {
 /// Provenance for every CPU this crate specifies.
 pub const PROVENANCE: &[Chip] = &[
     Chip {
+        module: "csg65ce02",
+        sources: &[Source {
+            title: "IC, LSI, Microprocessor, 4510 — Drawing 390490",
+            attribution: "Commodore Electronics Ltd",
+            year: Some("1991"),
+            library: "by-topic/cpu-65ce02/",
+        }],
+    },
+    Chip {
         module: "c64dtv2",
         sources: &[Source {
             title: "C64DTV Programming Guide",
