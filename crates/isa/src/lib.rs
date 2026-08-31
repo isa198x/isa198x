@@ -287,6 +287,7 @@ impl Cycles {
 pub mod c64dtv2;
 pub mod cdp1802;
 pub mod cp1610;
+pub mod csg65ce02;
 pub mod f8;
 pub mod huc6280;
 pub mod i8048;
