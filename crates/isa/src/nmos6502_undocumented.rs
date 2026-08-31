@@ -30,7 +30,7 @@ const ONE_ABS: &[Operand] = &[ADDR16];
 pub const SET: InstructionSet = InstructionSet {
     cpu: "NMOS 6502 undocumented extension",
     endianness: Endianness::Little,
-    instructions: INSTRUCTIONS,
+    instructions: &INSTRUCTIONS,
 };
 
 const fn form(
@@ -67,6 +67,31 @@ macro_rules! inst {
     ($mnemonic:literal, $summary:literal, [ $($form:expr),* $(,)? ]) => {
         Instruction { mnemonic: $mnemonic, summary: $summary, forms: &[ $($form),* ] }
     };
+}
+
+const EMPTY: Instruction = Instruction {
+    mnemonic: "",
+    summary: "",
+    forms: &[],
+};
+
+const fn join<const A: usize, const B: usize, const N: usize>(
+    left: [Instruction; A],
+    right: [Instruction; B],
+) -> [Instruction; N] {
+    assert!(N == A + B);
+    let mut joined = [EMPTY; N];
+    let mut i = 0;
+    while i < A {
+        joined[i] = left[i];
+        i += 1;
+    }
+    let mut j = 0;
+    while j < B {
+        joined[A + j] = right[j];
+        j += 1;
+    }
+    joined
 }
 
 macro_rules! rmw {
@@ -124,7 +149,7 @@ macro_rules! rmw {
 }
 
 #[rustfmt::skip]
-const INSTRUCTIONS: &[Instruction] = &[
+pub(crate) const DTV_SHARED_INSTRUCTIONS: [Instruction; 22] = [
     rmw!("SLO", "Shift left then OR accumulator",       0x03, "NZC"),
     rmw!("RLA", "Rotate left then AND accumulator",     0x23, "NZC"),
     rmw!("SRE", "Shift right then exclusive OR",        0x43, "NZC"),
@@ -161,9 +186,6 @@ const INSTRUCTIONS: &[Instruction] = &[
     ]),
     inst!("SHY", "Store Y AND high byte", [
         form(&[0x9C], "absolute,x", ONE_ABS, Cycles::fixed(5), ""),
-    ]),
-    inst!("ANC", "AND immediate and copy negative to carry", [
-        form(&[0x0B], "immediate", ONE_IMM, Cycles::fixed(2), "NZC"),
     ]),
     inst!("ASR", "AND immediate then shift right", [
         form(&[0x4B], "immediate", ONE_IMM, Cycles::fixed(2), "NZC"),
@@ -206,6 +228,14 @@ const INSTRUCTIONS: &[Instruction] = &[
         form(&[0x02], "implied", NONE, Cycles::fixed(2), ""),
     ]),
 ];
+
+const ANC_ADDITION: [Instruction; 1] = [inst!(
+    "ANC",
+    "AND immediate and copy negative to carry",
+    [form(&[0x0B], "immediate", ONE_IMM, Cycles::fixed(2), "NZC"),]
+)];
+
+const INSTRUCTIONS: [Instruction; 23] = join(DTV_SHARED_INSTRUCTIONS, ANC_ADDITION);
 
 #[cfg(test)]
 mod tests {
