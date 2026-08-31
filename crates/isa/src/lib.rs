@@ -107,6 +107,7 @@ pub enum Endianness {
 }
 
 /// One mnemonic and all the ways it can be encoded.
+#[derive(Clone, Copy)]
 pub struct Instruction {
     /// Upper-case mnemonic, e.g. `"LDA"`.
     pub mnemonic: &'static str,
