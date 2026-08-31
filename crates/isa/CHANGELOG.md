@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.3...isa198x-v0.1.4) - 2026-08-31
+
+### Added
+
+- *(isa)* add Rockwell and WDC 65C02 profiles
+
 ## [0.1.3](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.2...isa198x-v0.1.3) - 2026-08-31
 
 ### Added
