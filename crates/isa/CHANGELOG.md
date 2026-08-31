@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.5...isa198x-v0.1.6) - 2026-08-31
+
+### Added
+
+- *(isa)* add 65CE02 and 4502 profiles
+
 ## [0.1.5](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.4...isa198x-v0.1.5) - 2026-08-31
 
 ### Added
