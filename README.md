@@ -27,9 +27,14 @@ surcharge and extension-byte count for documented encodings.
 whether the condition-code register is restored.
 `mos6809::Insn::branch_effects(mode)` reports complete short/long branch
 timing and condition-code read/write masks, including BRA/BRN/BSR and aliases.
+`mos6809::Insn::memory_effects(mode, postbyte)` resolves complete timing for
+ordinary memory forms, including indexed costs, and distinguishes calculated,
+set, cleared, undefined, and preserved flags. Indexed forms require a documented
+postbyte; a missing postbyte never produces a misleading base-only total.
 These follow Motorola's manufacturer tables, cited in the module.
 
 These are the first pieces of the 6809 timing backfill, not full instruction
-timing coverage. Other instruction base timings and remaining flag effects are
-not yet supplied; consumers must not infer them from absent data. Asm198x's
+timing coverage. Inherent instructions, register transfers, and the immediate
+CC operations ANDCC/ORCC/CWAI remain outside these tables; consumers must not
+infer their effects from absent data. Asm198x's
 6809 cycle coverage remains unchanged until those tables and capture exist.

@@ -8,12 +8,49 @@
 //! Branch timing: the same manual, Appendix F, Table F-1; flags tested and
 //! preserved: Appendix A, BCC through BVS (including aliases and BSR).
 //! [Manual transcription](https://www.maddes.net/m6809pm/appendix_f.htm).
+//! Ordinary memory forms use the same Appendix F base timings and
+//! [Appendix A flag definitions](https://www.maddes.net/m6809pm/appendix_a.htm).
 //!
 //! Indexed costs are additions to an instruction's indexed base cost, not
 //! complete instruction timings. They depend on the encoded postbyte, not
 //! the value of the effective address: no page-cross penalty is involved.
 //! Undocumented postbytes return `None`, never a fabricated zero.
 //! Costs are nominal processor cycles, excluding external stalls.
+
+mod memory;
+pub use memory::MemoryEffects;
+
+/// CC inputs and output categories, in hardware E F H I N Z V C bit order.
+/// Output masks are disjoint. Bits in none of the output masks are preserved.
+/// Undefined is a documented unspecified result, not missing metadata.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct ConditionCodeEffects {
+    /// Flags consumed as inputs to the operation, excluding mere preservation.
+    pub read: u8,
+    /// Flags computed from the operation's data/result (not constant set/clear).
+    pub calculated: u8,
+    /// Flags always cleared to zero.
+    pub cleared: u8,
+    /// Flags always set to one.
+    pub set: u8,
+    /// Flags whose output values the manufacturer leaves undefined.
+    pub undefined: u8,
+}
+
+impl ConditionCodeEffects {
+    /// All flags that may change, including those with undefined results.
+    #[must_use]
+    pub const fn written(self) -> u8 {
+        self.calculated | self.cleared | self.set | self.undefined
+    }
+
+    /// Flags guaranteed to retain their incoming values.
+    #[must_use]
+    pub const fn preserved(self) -> u8 {
+        !self.written()
+    }
+}
 
 /// Extra work and extension bytes selected by an indexed postbyte.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
