@@ -31,10 +31,13 @@ timing and condition-code read/write masks, including BRA/BRN/BSR and aliases.
 ordinary memory forms, including indexed costs, and distinguishes calculated,
 set, cleared, undefined, and preserved flags. Indexed forms require a documented
 postbyte; a missing postbyte never produces a misleading base-only total.
+`mos6809::Insn::immediate_cc_effects(mask)` resolves ANDCC/ORCC flags for the
+encoded mask. `mos6809::Insn::fixed_inherent_effects()` covers accumulator
+operations, NOP, ABX, RTS, MUL, SEX and DAA, with complete fixed costs.
 These follow Motorola's manufacturer tables, cited in the module.
 
 These are the first pieces of the 6809 timing backfill, not full instruction
-timing coverage. Inherent instructions, register transfers, and the immediate
-CC operations ANDCC/ORCC/CWAI remain outside these tables; consumers must not
+timing coverage. Interrupt-related instructions (SYNC, RTI, SWI/SWI2/SWI3,
+CWAI) and register transfers remain outside these tables; consumers must not
 infer their effects from absent data. Asm198x's
 6809 cycle coverage remains unchanged until those tables and capture exist.
