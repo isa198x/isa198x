@@ -19,15 +19,17 @@ CPU modules remain in one `isa198x` crate. A per-CPU crate split is reserved
 for a measured need: a consumer requiring one isolated ISA, or material build
 and packaging cost from the combined crate.
 
-## 6809 operand timing
+## 6809 timing and flags
 
 `mos6809::timing::indexed_cost(postbyte)` reports the indexed-addressing
 surcharge and extension-byte count for documented encodings.
 `mos6809::Insn::stack_effects(mask)` reports complete push/pull timing and
-whether the condition-code register is restored. Both follow Motorola's
-manufacturer tables, cited in the module.
+whether the condition-code register is restored.
+`mos6809::Insn::branch_effects(mode)` reports complete short/long branch
+timing and condition-code read/write masks, including BRA/BRN/BSR and aliases.
+These follow Motorola's manufacturer tables, cited in the module.
 
 These are the first pieces of the 6809 timing backfill, not full instruction
-timing coverage. Per-instruction base timings and remaining flag effects are
+timing coverage. Other instruction base timings and remaining flag effects are
 not yet supplied; consumers must not infer them from absent data. Asm198x's
 6809 cycle coverage remains unchanged until those tables and capture exist.

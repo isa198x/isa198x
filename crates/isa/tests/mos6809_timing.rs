@@ -1,9 +1,105 @@
 //! Motorola MC6809E (1984), Table 2 and Figure 18 note 4; programming
 //! manual (1981), Appendix A, the four stack-operation entries.
 use isa198x::mos6809::{
-    lookup,
+    Insn, Kind, SET, lookup, rows,
     timing::{StackConditionCodes, indexed_cost},
 };
+
+/// Motorola programming manual (1981), Appendix F Table F-1, and
+/// Appendix A's branch operation/CC entries. Expectations are mnemonic-based
+/// so this also checks the production opcode-to-condition mapping.
+#[test]
+fn every_branch_row_has_complete_timing_and_flag_dependencies() {
+    let branches = [
+        ("bra", 3, 5, 0, 0),
+        ("brn", 3, 5, 0, 0),
+        ("bsr", 7, 9, 0, 0),
+        ("bhi", 3, 5, 1, 0x05),
+        ("bls", 3, 5, 1, 0x05),
+        ("bcc", 3, 5, 1, 0x01),
+        ("bhs", 3, 5, 1, 0x01),
+        ("bcs", 3, 5, 1, 0x01),
+        ("blo", 3, 5, 1, 0x01),
+        ("bne", 3, 5, 1, 0x04),
+        ("beq", 3, 5, 1, 0x04),
+        ("bvc", 3, 5, 1, 0x02),
+        ("bvs", 3, 5, 1, 0x02),
+        ("bpl", 3, 5, 1, 0x08),
+        ("bmi", 3, 5, 1, 0x08),
+        ("bge", 3, 5, 1, 0x0a),
+        ("blt", 3, 5, 1, 0x0a),
+        ("bgt", 3, 5, 1, 0x0e),
+        ("ble", 3, 5, 1, 0x0e),
+    ];
+    assert_eq!(
+        SET.iter()
+            .filter(|i| matches!(i.kind, Kind::Branch { .. }))
+            .count(),
+        branches.len(),
+        "new branches must join the manufacturer expectations"
+    );
+    for (name, short, long, extra, read) in branches {
+        let insn = lookup(name).expect("documented branch");
+        for (mode, base, taken) in [("relative", short, 0), ("relative long", long, extra)] {
+            let e = insn.branch_effects(mode).expect("documented branch row");
+            assert_eq!(
+                (e.cycles.base, e.cycles.branch_taken),
+                (base, taken),
+                "{name} {mode}"
+            );
+            assert_eq!(e.cycles.page_cross, 0, "{name} {mode}");
+            assert_eq!(e.condition_codes_read, read, "{name} {mode}");
+            assert_eq!(e.condition_codes_written, 0, "{name} {mode}");
+        }
+        for mode in [
+            "",
+            "inherent",
+            "immediate",
+            "direct",
+            "indexed",
+            "extended",
+            "register pair",
+            "register set",
+        ] {
+            assert!(insn.branch_effects(mode).is_none(), "{name} {mode}");
+        }
+    }
+    let mut covered = 0;
+    for row in rows() {
+        let insn = lookup(row.mnemonic).expect("declared row");
+        let effects = insn.branch_effects(&row.mode);
+        assert_eq!(effects.is_some(), matches!(insn.kind, Kind::Branch { .. }));
+        covered += usize::from(effects.is_some());
+    }
+    assert_eq!(covered, 38);
+}
+
+#[test]
+fn missing_or_undocumented_branch_encodings_are_not_zero_cost() {
+    for insn in SET
+        .iter()
+        .filter(|i| !matches!(i.kind, Kind::Branch { .. }))
+    {
+        assert!(insn.branch_effects("relative").is_none());
+        assert!(insn.branch_effects("relative long").is_none());
+    }
+    // Insn and Kind are public: do not assume every constructed instance came
+    // from SET, or that a plausible mnemonic makes its bytes documented.
+    for (short, long, undocumented) in [
+        (&[][..], &[][..], false),
+        (&[0x20][..], &[0x16][..], true),
+        (&[0x10, 0x26][..], &[0x26][..], false),
+        (&[0x12][..], &[0x10, 0x20][..], false),
+    ] {
+        let insn = Insn {
+            mnemonic: "bra",
+            kind: Kind::Branch { short, long },
+            undocumented,
+        };
+        assert!(insn.branch_effects("relative").is_none());
+        assert!(insn.branch_effects("relative long").is_none());
+    }
+}
 
 #[test]
 fn every_indexed_postbyte_matches_the_manufacturer_matrix() {
