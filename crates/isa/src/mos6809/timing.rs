@@ -5,6 +5,9 @@
 //! [Manufacturer datasheet scan](https://datasheets.pl/elementy_czynne/IC/MC/MC6809E-4.pdf).
 //! Stack condition-code effects: Motorola, *MC6809–MC6809E Programming Manual*
 //! (1981), Appendix A, PSHS/PSHU/PULS/PULU operation and condition-code entries.
+//! Branch timing: the same manual, Appendix F, Table F-1; flags tested and
+//! preserved: Appendix A, BCC through BVS (including aliases and BSR).
+//! [Manual transcription](https://www.maddes.net/m6809pm/appendix_f.htm).
 //!
 //! Indexed costs are additions to an instruction's indexed base cost, not
 //! complete instruction timings. They depend on the encoded postbyte, not
@@ -87,7 +90,81 @@ pub struct StackEffects {
     pub condition_codes: StackConditionCodes,
 }
 
+/// Timing and CC dependencies of a documented short or long branch.
+///
+/// All these instructions preserve the entire condition-code register,
+/// including BSR/LBSR, which push the return address, not CC. Flag masks use
+/// the hardware CC layout: E F H I N Z V C, most to least significant bit.
+#[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
+pub struct BranchEffects {
+    /// Complete nominal instruction timing, excluding any called subroutine.
+    /// Short conditional branches cost three cycles on either path; long
+    /// conditional branches cost five, plus one when taken. BRA/LBRA and
+    /// BRN/LBRN have fixed costs, as do BSR/LBSR. No page-cross penalty applies.
+    pub cycles: crate::Cycles,
+    /// Mask of flags tested to decide whether to branch (zero for BRA/BRN/BSR).
+    pub condition_codes_read: u8,
+    /// Mask of flags modified by the instruction (zero for every branch).
+    pub condition_codes_written: u8,
+}
+
 impl super::Insn {
+    /// Timing and flags for a branch's `"relative"` or `"relative long"` row.
+    ///
+    /// Uses the selected opcode, so aliases share the same facts. Returns
+    /// `None` for other modes, instruction kinds, or undocumented encodings.
+    /// A long form is selected through the base mnemonic (for example, lookup
+    /// `"bne"`, then request `"relative long"`), just as in [`super::rows`].
+    ///
+    /// ```
+    /// use isa198x::mos6809::lookup;
+    /// let bne = lookup("bne").expect("BNE");
+    /// let effects = bne.branch_effects("relative long").expect("LBNE");
+    /// assert_eq!(effects.cycles.base, 5);
+    /// assert_eq!(effects.cycles.branch_taken, 1);
+    /// assert_eq!(effects.cycles.page_cross, 0);
+    /// assert_eq!(effects.condition_codes_read, 0x04); // Z
+    /// assert_eq!(effects.condition_codes_written, 0);
+    /// ```
+    #[must_use]
+    pub fn branch_effects(&self, mode: &str) -> Option<BranchEffects> {
+        if self.undocumented {
+            return None;
+        }
+        let super::Kind::Branch { short, long } = self.kind else {
+            return None;
+        };
+        let (base, branch_taken, condition) = match (mode, short, long) {
+            ("relative", [op @ 0x20..=0x2f], _) => (3, 0, *op),
+            ("relative", [0x8d], _) => (7, 0, 0x20),
+            ("relative long", _, [0x16]) => (5, 0, 0x20),
+            ("relative long", _, [0x17]) => (9, 0, 0x20),
+            ("relative long", _, [0x10, 0x21]) => (5, 0, 0x21),
+            ("relative long", _, [0x10, op @ 0x22..=0x2f]) => (5, 1, *op),
+            _ => return None,
+        };
+        let condition_codes_read = match condition {
+            0x22 | 0x23 => 0x05, // C | Z
+            0x24 | 0x25 => 0x01, // C
+            0x26 | 0x27 => 0x04, // Z
+            0x28 | 0x29 => 0x02, // V
+            0x2a | 0x2b => 0x08, // N
+            0x2c | 0x2d => 0x0a, // N | V
+            0x2e | 0x2f => 0x0e, // N | V | Z
+            _ => 0,              // always / never / subroutine
+        };
+        Some(BranchEffects {
+            cycles: crate::Cycles {
+                base,
+                page_cross: 0,
+                branch_taken,
+            },
+            condition_codes_read,
+            condition_codes_written: 0,
+        })
+    }
+
     /// Resolve a stack instruction's register-mask-dependent timing and flags.
     /// All 256 masks are defined, including the empty set. Other instruction
     /// kinds return `None`; no timing is inferred for them from their operands.
