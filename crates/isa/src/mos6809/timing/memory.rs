@@ -89,7 +89,7 @@ fn memory_opcode(kind: &Kind, mode: &str) -> Option<(usize, &'static [u8])> {
 
 // Arrays are immediate/direct/indexed/extended base cycles. A zero marks an
 // absent mode, which memory_opcode rejects before this table is consulted.
-fn facts(name: &str) -> Option<([u8; 4], ConditionCodeEffects)> {
+pub(super) fn facts(name: &str) -> Option<([u8; 4], ConditionCodeEffects)> {
     let nz_clear_v = cc(0, 0x0c, 0x02, 0, 0);
     let arithmetic16 = cc(0, 0x0f, 0, 0, 0);
     let none = cc(0, 0, 0, 0, 0);

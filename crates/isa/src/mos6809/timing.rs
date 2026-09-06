@@ -19,6 +19,8 @@
 
 mod memory;
 pub use memory::MemoryEffects;
+mod fixed;
+pub use fixed::FixedEffects;
 
 /// CC inputs and output categories, in hardware E F H I N Z V C bit order.
 /// Output masks are disjoint. Bits in none of the output masks are preserved.
