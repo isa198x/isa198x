@@ -11,6 +11,8 @@
 //! long conditional branches…) are uniform. An empty slice means the mode is
 //! not supported by that mnemonic.
 
+pub mod timing;
+
 /// One 6809 instruction and the shape of its operands.
 pub struct Insn {
     pub mnemonic: &'static str,
