@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.6...isa198x-v0.1.7) - 2026-09-07
+
+### Added
+
+- *(6809)* model interrupt timing and CC phases ([#25](https://github.com/isa198x/isa198x/pull/25))
+- *(6809)* resolve transfer timing and CC loads ([#24](https://github.com/isa198x/isa198x/pull/24))
+- *(6809)* add immediate CC and fixed inherent effects ([#23](https://github.com/isa198x/isa198x/pull/23))
+- *(6809)* resolve memory timing and condition-code effects ([#22](https://github.com/isa198x/isa198x/pull/22))
+- *(6809)* add branch timing and condition-code dependencies ([#21](https://github.com/isa198x/isa198x/pull/21))
+- *(6809)* add operand-resolved timing and stack flag effects ([#19](https://github.com/isa198x/isa198x/pull/19))
+
 ## [0.1.6](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.5...isa198x-v0.1.6) - 2026-08-31
 
 ### Added
