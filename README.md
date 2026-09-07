@@ -38,10 +38,15 @@ operations, NOP, ABX, RTS, MUL, SEX and DAA, with complete fixed costs.
 same-width register pairs, distinguishing CC preservation from loading CC
 from another register. Its source notes record the conflicting TFR timing
 entries and the selected C/D tables.
+`mos6809::Insn::interrupt_effects(mask)` distinguishes fixed software-interrupt
+entry, RTI's restored-E-dependent timing, and unbounded SYNC/CWAI waits.
+CC effects identify handler-entry, pre-wait, and restored-state phases; saved
+CC is reported separately from live CC. A wait's minimum is never its ceiling.
 These follow Motorola's manufacturer tables, cited in the module.
 
-These are the first pieces of the 6809 timing backfill, not full instruction
-timing coverage. Interrupt-related instructions (SYNC, RTI, SWI/SWI2/SWI3,
-CWAI) remain outside these tables; consumers must not
-infer their effects from absent data. Asm198x's
-6809 cycle coverage remains unchanged until those tables and capture exist.
+Every documented 6809 instruction row has a timing/effects path, with operand
+validation where required. Undocumented encodings remain unknown. These are
+nominal instruction costs, not whole-program bounds or handler execution
+costs. Asm198x's cycle coverage remains unchanged until capture/integration
+consumes these tables, including the distinction between bounded and unbounded
+execution.
