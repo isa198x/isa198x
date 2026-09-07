@@ -34,10 +34,14 @@ postbyte; a missing postbyte never produces a misleading base-only total.
 `mos6809::Insn::immediate_cc_effects(mask)` resolves ANDCC/ORCC flags for the
 encoded mask. `mos6809::Insn::fixed_inherent_effects()` covers accumulator
 operations, NOP, ABX, RTS, MUL, SEX and DAA, with complete fixed costs.
+`mos6809::Insn::transfer_effects(postbyte)` resolves TFR/EXG for documented
+same-width register pairs, distinguishing CC preservation from loading CC
+from another register. Its source notes record the conflicting TFR timing
+entries and the selected C/D tables.
 These follow Motorola's manufacturer tables, cited in the module.
 
 These are the first pieces of the 6809 timing backfill, not full instruction
 timing coverage. Interrupt-related instructions (SYNC, RTI, SWI/SWI2/SWI3,
-CWAI) and register transfers remain outside these tables; consumers must not
+CWAI) remain outside these tables; consumers must not
 infer their effects from absent data. Asm198x's
 6809 cycle coverage remains unchanged until those tables and capture exist.
