@@ -23,6 +23,8 @@ mod fixed;
 pub use fixed::FixedEffects;
 mod transfer;
 pub use transfer::{TransferConditionCodes, TransferEffects};
+mod interrupt;
+pub use interrupt::{InterruptConditionCodes, InterruptEffects, InterruptTiming};
 
 /// CC inputs and output categories, in hardware E F H I N Z V C bit order.
 /// Output masks are disjoint. Bits in none of the output masks are preserved.
