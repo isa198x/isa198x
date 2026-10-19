@@ -1,46 +1,20 @@
 name: Release-plz
 
+# Tags merged releases, then opens or updates the next release PR, using the
+# workflow every 198x Rust repo shares (stevehill1981/198x-workflows).
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: write
   pull-requests: write
+  # crates.io Trusted Publishing matches this file's name, so keep it.
   id-token: write
 
 jobs:
-  release:
-    name: Publish merged releases
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: release-plz/action@v0.5
-        with:
-          command: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-
-  release-pr:
-    name: Prepare the next release
-    needs: release
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: release-plz-pr-${{ github.ref }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: release-plz/action@v0.5
-        with:
-          command: release-pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN || secrets.GITHUB_TOKEN }}
+  release-plz:
+    name: Release-plz
+    uses: stevehill1981/198x-workflows/.github/workflows/release-plz.yml@v1
+    secrets: inherit
