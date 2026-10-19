@@ -1,27 +1,43 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches: [main]
-
-permissions:
-  contents: read
+    branches:
+      - main
+  pull_request:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  test:
+  # Format, Clippy, coverage (the Linux test run) and a build and test on
+  # macOS and Windows, shared by every 198x Rust repo
+  # (stevehill1981/198x-workflows).
+  rust:
+    name: Rust
+    uses: stevehill1981/198x-workflows/.github/workflows/rust-ci.yml@v1
+    with:
+      # Measuring: set just below the first measured figure before merge.
+      coverage-floor: 0
+
+  docs:
+    name: Docs
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
-      - run: cargo fmt --all --check
-      - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo test --workspace
-      - run: cargo doc --workspace --no-deps
+          persist-credentials: false
+      - name: Read pinned toolchain
+        id: toolchain
+        run: echo "channel=$(awk -F'"' '/^channel/{print $2}' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Build the documentation
+        run: cargo doc --workspace --no-deps
