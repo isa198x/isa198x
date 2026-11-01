@@ -4,11 +4,11 @@ version = 4
 
 [[package]]
 name = "isa198x"
-version = "0.1.9"
+version = "0.1.10"
 
 [[package]]
 name = "isa198x-disasm"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "isa198x",
 ]
