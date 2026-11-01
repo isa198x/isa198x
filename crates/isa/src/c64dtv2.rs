@@ -9,6 +9,16 @@
 //! *C64DTV Programming Guide* in `reference/by-topic/cpu-c64dtv/`; the exposed
 //! mnemonic boundary is checked against ACME and cc65's independently authored
 //! `6502dtv-opcodes.s` opcode-space test.
+//!
+//! **`ANC` is disputed, so there are two sets.** [`SET`] is ACME's profile,
+//! which dropped `ANC` in ACME 0.95.6 on a reported test that `$0B` and `$2B`
+//! do not work on a DTV2. [`CA65_SET`] adds `ANC #imm` at `$0B`, as cc65 does:
+//! ca65 V2.19's manual lists `ANC` among the DTV's supported undocumented
+//! instructions, its `6502dtv-opcodes.s` assembles `anc` as `$0B`, and VICE's
+//! DTV core (`6510dtvcore.c`) executes `$0B` and `$2B` as `ANC`. The
+//! programming guide does not cover the undocumented instructions, so no
+//! primary source settles it. Each assembler profile takes the set its
+//! reference tool assembles.
 
 use crate::{Cycles, Endianness, Form, Instruction, InstructionSet, Operand, OperandKind};
 
@@ -27,6 +37,14 @@ pub const SET: InstructionSet = InstructionSet {
     cpu: "C64DTV revision 2 (extension)",
     endianness: Endianness::Little,
     instructions: &INSTRUCTIONS,
+};
+
+/// [`SET`] with `ANC #imm` at `$0B`, as cc65's ca65 assembles the DTV. See
+/// the module notes for why the two differ.
+pub const CA65_SET: InstructionSet = InstructionSet {
+    cpu: "C64DTV revision 2, as ca65 reads it (extension)",
+    endianness: Endianness::Little,
+    instructions: &CA65_INSTRUCTIONS,
 };
 
 const fn form(opcode: &'static [u8], mode: &'static str, operands: &'static [Operand]) -> Form {
@@ -89,6 +107,9 @@ const INSTRUCTIONS: [Instruction; 25] = join(
     ADDITIONS,
 );
 
+const CA65_INSTRUCTIONS: [Instruction; 26] =
+    join(INSTRUCTIONS, crate::nmos6502_undocumented::ANC_ADDITION);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,5 +131,17 @@ mod tests {
         );
         assert!(SET.find_form("SLO", "zeropage").is_some());
         assert!(SET.find_form("ANC", "immediate").is_none());
+    }
+
+    #[test]
+    fn the_ca65_reading_adds_only_anc() {
+        assert_eq!(CA65_SET.rows().count(), SET.rows().count() + 1);
+        assert_eq!(
+            CA65_SET.find_form("ANC", "immediate").expect("ANC").opcode,
+            &[0x0B]
+        );
+        for row in SET.rows() {
+            assert!(CA65_SET.rows().any(|other| other == row), "{row:?}");
+        }
     }
 }
