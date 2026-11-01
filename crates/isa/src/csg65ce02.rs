@@ -89,7 +89,7 @@ const EMPTY: Instruction = Instruction {
     forms: &[],
 };
 
-const fn join<const A: usize, const B: usize, const N: usize>(
+pub(crate) const fn join<const A: usize, const B: usize, const N: usize>(
     a: [Instruction; A],
     b: [Instruction; B],
 ) -> [Instruction; N] {
@@ -165,7 +165,7 @@ const AUG: [Instruction; 1] = [implied!("AUG", 0x5C)];
 const INSTRUCTIONS: [Instruction; 90] = join(CE_CORE, AUG);
 
 const CSG4502_ADDITIONS: [Instruction; 2] = [implied!("MAP", 0x5C), implied!("EOM", 0xEA)];
-const CSG4502_INSTRUCTIONS: [Instruction; 91] = join(CE_CORE, CSG4502_ADDITIONS);
+pub(crate) const CSG4502_INSTRUCTIONS: [Instruction; 91] = join(CE_CORE, CSG4502_ADDITIONS);
 
 #[cfg(test)]
 mod tests {

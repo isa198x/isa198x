@@ -295,6 +295,7 @@ pub mod i8080;
 pub mod m6800;
 pub mod m68k;
 pub mod machines;
+pub mod mega45gs02;
 pub mod mos6502;
 pub mod mos65816;
 pub mod mos65c02;

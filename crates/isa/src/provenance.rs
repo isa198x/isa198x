@@ -57,6 +57,15 @@ pub const PROVENANCE: &[Chip] = &[
         }],
     },
     Chip {
+        module: "mega45gs02",
+        sources: &[Source {
+            title: "MEGA65 User Guide — 45GS02 opcode table and addressing modes",
+            attribution: "MEGA Museum of Electronic Games & Art e.V.",
+            year: Some("2026"),
+            library: "by-topic/cpu-45gs02/",
+        }],
+    },
+    Chip {
         module: "c64dtv2",
         sources: &[Source {
             title: "C64DTV Programming Guide",
