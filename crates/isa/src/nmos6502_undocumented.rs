@@ -229,7 +229,7 @@ pub(crate) const DTV_SHARED_INSTRUCTIONS: [Instruction; 22] = [
     ]),
 ];
 
-const ANC_ADDITION: [Instruction; 1] = [inst!(
+pub(crate) const ANC_ADDITION: [Instruction; 1] = [inst!(
     "ANC",
     "AND immediate and copy negative to carry",
     [form(&[0x0B], "immediate", ONE_IMM, Cycles::fixed(2), "NZC"),]
