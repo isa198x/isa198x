@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.7...isa198x-v0.1.8) - 2026-11-01
+
+### Added
+
+- *(c64dtv2)* add ca65's reading of the DTV, with ANC
+
 ## [0.1.7](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.6...isa198x-v0.1.7) - 2026-09-07
 
 ### Added
