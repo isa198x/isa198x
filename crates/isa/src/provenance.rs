@@ -57,6 +57,32 @@ pub const PROVENANCE: &[Chip] = &[
         }],
     },
     Chip {
+        module: "m740",
+        sources: &[
+            Source {
+                title: "740 Family Software Manual, Rev.2.00",
+                attribution: "Renesas Technology Corp.",
+                year: Some("2006"),
+                library: "by-topic/cpu-m740/",
+            },
+            Source {
+                title: "740 Family Software Manual, Rev.1.00",
+                attribution: "Mitsubishi Electric Corporation",
+                year: Some("1997"),
+                library: "by-topic/cpu-m740/",
+            },
+        ],
+    },
+    Chip {
+        module: "sweet16",
+        sources: &[Source {
+            title: "SWEET 16: The 6502 Dream Machine, with the interpreter source",
+            attribution: "Steve Wozniak",
+            year: Some("1977"),
+            library: "by-topic/cpu-sweet16/",
+        }],
+    },
+    Chip {
         module: "mega45gs02",
         sources: &[Source {
             title: "MEGA65 User Guide — 45GS02 opcode table and addressing modes",
