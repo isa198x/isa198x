@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11](https://github.com/isa198x/isa198x/compare/isa198x-disasm-v0.1.10...isa198x-disasm-v0.1.11) - 2026-11-02
+
+### Added
+
+- *(disasm)* disassemble ca65's other 6502-family CPUs
+
 ## [0.1.0] - 2026-08-28
 
 ### Changed
