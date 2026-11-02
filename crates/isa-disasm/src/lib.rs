@@ -3847,6 +3847,212 @@ fn decode_z8000(code: &[u8], pos: usize, seg: bool) -> Option<(String, usize)> {
 
 // Round-trip tests (assemble → disassemble → reassemble) live in the `asm198x`
 // crate, which has the assembler; here we test decode + render in isolation.
+// ---------------------------------------------------------------------------
+// ca65's other 6502-family CPUs: one decoder over a base set and its extension
+// ---------------------------------------------------------------------------
+
+/// Disassemble a flat binary loaded at `origin` for one of ca65's 6502-family
+/// CPUs, given as its instruction sets: `base` (the 6502's, or a set of its
+/// own such as SWEET 16's) and the `extension` the CPU adds. The text is ca65
+/// syntax. The extension wins any opcode both sets define, and a longer
+/// opcode wins a shorter one, so the 45GS02's prefixed forms decode as one
+/// instruction. A byte that starts no instruction becomes a `.byte` datum.
+///
+/// This covers the 6502X, 6502DTV, 65SC02, 65C02, W65C02, 65CE02, 4510,
+/// 45GS02, M740 and SWEET 16. The 65816 and HuC6280 have their own entry
+/// points, [`disassemble_65816`] and [`disassemble_huc6280`].
+#[must_use]
+pub fn disassemble_ca65(
+    code: &[u8],
+    origin: u16,
+    base: &isa::InstructionSet,
+    extension: Option<&isa::InstructionSet>,
+) -> Vec<Line> {
+    let sets: Vec<&isa::InstructionSet> = extension.into_iter().chain([base]).collect();
+    let mut out = Vec::new();
+    let mut pos = 0;
+    while pos < code.len() {
+        let addr = origin.wrapping_add(pos as u16);
+        if let Some((set, mnemonic, mode, values, len)) = decode_longest(&sets, code, pos) {
+            out.push(Line {
+                addr: u32::from(addr),
+                bytes: code[pos..pos + len].to_vec(),
+                text: render_ca65(ca65_spelling(set, mnemonic), mode, &values, addr, len),
+            });
+            pos += len;
+        } else {
+            out.push(Line {
+                addr: u32::from(addr),
+                bytes: vec![code[pos]],
+                text: format!(".byte ${:02X}", code[pos]),
+            });
+            pos += 1;
+        }
+    }
+    out
+}
+
+/// Render a [`disassemble_ca65`] disassembly as ca65 source that assembles
+/// on its own: `.setcpu` naming `cpu`, as ca65 spells it (such as `"m740"`),
+/// then `.org` and one instruction per line.
+#[must_use]
+pub fn listing_ca65(
+    code: &[u8],
+    origin: u16,
+    cpu: &str,
+    base: &isa::InstructionSet,
+    extension: Option<&isa::InstructionSet>,
+) -> String {
+    let mut s = format!("        .setcpu \"{cpu}\"\n        .org ${origin:04X}\n");
+    for line in disassemble_ca65(code, origin, base, extension) {
+        s.push_str("        ");
+        s.push_str(&line.text);
+        s.push('\n');
+    }
+    s
+}
+
+/// The name ca65 gives an instruction of `set`. ca65 spells three of the
+/// 6502's undocumented instructions differently from Isa198x, and writes the
+/// two- and three-byte no-operations as `NOP`.
+fn ca65_spelling<'a>(set: &isa::InstructionSet, mnemonic: &'a str) -> &'a str {
+    let undocumented =
+        set.cpu.starts_with("NMOS 6502 undocumented") || set.cpu.starts_with("C64DTV");
+    match mnemonic {
+        "ASR" if undocumented => "ALR",
+        "SBX" if undocumented => "AXS",
+        "LXA" if undocumented => "LAX",
+        "DOP" | "TOP" if undocumented => "NOP",
+        // The 65CE02's `BRU` and `LBRU` are ca65's `BRA` and `LBRA`.
+        "BRU" => "BRA",
+        "LBRU" => "LBRA",
+        other => other,
+    }
+}
+
+/// Decode one instruction at `pos`, trying the longest opcode first and,
+/// for each length, the sets in order. Where a set gives one opcode two
+/// forms, such as the 6502X's two-byte `NOP` with and without its operand,
+/// the form that reads more bytes wins, as the processor does, and an opcode
+/// whose operands run past the end of `code` is not decoded at all. Operands
+/// are little-endian; a PC-relative one is sign-extended at its own width.
+fn decode_longest<'a>(
+    sets: &[&'a isa::InstructionSet],
+    code: &[u8],
+    pos: usize,
+) -> Option<(&'a isa::InstructionSet, &'a str, &'a str, Vec<i64>, usize)> {
+    for opcode_len in (1..=4).rev() {
+        let Some(opcode) = code.get(pos..pos + opcode_len) else {
+            continue;
+        };
+        for set in sets {
+            let mut found: Option<(&'a str, &'a str, Vec<i64>, usize)> = None;
+            let mut truncated = false;
+            for insn in set.instructions {
+                for form in insn.forms {
+                    if form.opcode != opcode || !form.suffix.is_empty() {
+                        continue;
+                    }
+                    let mut values = Vec::new();
+                    let mut off = pos + opcode_len;
+                    let mut complete = true;
+                    for operand in form.operands {
+                        let n = operand.bytes as usize;
+                        let Some(bytes) = code.get(off..off + n) else {
+                            complete = false;
+                            break;
+                        };
+                        let mut v = bytes
+                            .iter()
+                            .rev()
+                            .fold(0i64, |acc, &b| (acc << 8) | i64::from(b));
+                        if matches!(operand.kind, isa::OperandKind::RelativePc)
+                            && n > 0
+                            && v & (1 << (n * 8 - 1)) != 0
+                        {
+                            v -= 1 << (n * 8);
+                        }
+                        values.push(v);
+                        off += n;
+                    }
+                    let len = off - pos;
+                    truncated |= !complete;
+                    if complete && found.as_ref().is_none_or(|(.., best)| len > *best) {
+                        found = Some((insn.mnemonic, form.mode, values, len));
+                    }
+                }
+            }
+            if truncated {
+                return None;
+            }
+            if let Some((mnemonic, mode, values, len)) = found {
+                return Some((set, mnemonic, mode, values, len));
+            }
+        }
+    }
+    None
+}
+
+/// Render a decoded instruction to ca65 syntax. A low `absolute` operand takes
+/// an `a:` force so it reassembles to the absolute form rather than zero
+/// page, as the HuC6280 and 65816 renderers do.
+fn render_ca65(mnemonic: &str, mode: &str, vals: &[i64], addr: u16, len: usize) -> String {
+    let m = mnemonic.to_ascii_lowercase();
+    let v = vals.first().copied().unwrap_or(0);
+    let second = vals.get(1).copied().unwrap_or(0);
+    let abs = |val: i64| -> String {
+        let force = if (0..0x100).contains(&val) { "a:" } else { "" };
+        format!("{force}${:04X}", val & 0xFFFF)
+    };
+    // A branch counts from the end of its instruction, except a 65CE02 long
+    // branch, which counts from its opcode plus two.
+    let target = |off: i64, from: usize| addr.wrapping_add(from as u16).wrapping_add(off as u16);
+    let operand = match mode {
+        "implied" => String::new(),
+        // The 45GS02's quad forms are written bare; a one-byte opcode names
+        // the accumulator, which the M740's bit instructions need.
+        "accumulator" if len > 1 => String::new(),
+        "accumulator" => "a".to_string(),
+        "immediate" => format!("#${:02X}", v & 0xFF),
+        "immediate16" => format!("#${:04X}", v & 0xFFFF),
+        "zeropage" => format!("${:02X}", v & 0xFF),
+        "zeropage,x" => format!("${:02X},x", v & 0xFF),
+        "zeropage,y" => format!("${:02X},y", v & 0xFF),
+        "absolute" => abs(v),
+        "absolute,x" => format!("{},x", abs(v)),
+        "absolute,y" => format!("{},y", abs(v)),
+        "indirect" => format!("(${:04X})", v & 0xFFFF),
+        "(absolute,x)" => format!("(${:04X},x)", v & 0xFFFF),
+        "(indirect)" => format!("(${:02X})", v & 0xFF),
+        "(indirect,x)" => format!("(${:02X},x)", v & 0xFF),
+        "(indirect),y" => format!("(${:02X}),y", v & 0xFF),
+        "(indirect),z" => format!("(${:02X}),z", v & 0xFF),
+        "[indirect]" => format!("[${:02X}]", v & 0xFF),
+        "[indirect],z" => format!("[${:02X}],z", v & 0xFF),
+        "(stack-indirect),y" => format!("(${:02X},sp),y", v & 0xFF),
+        "relative" => format!("${:04X}", target(v, len)),
+        "relative16" => format!("${:04X}", target(v, 2)),
+        "zeropage,relative" => format!("${:02X}, ${:04X}", v & 0xFF, target(second, len)),
+        "accumulator,relative" => format!("a, ${:04X}", target(v, len)),
+        // The M740's `LDM`: ca65 writes the address first.
+        "immediate,zeropage" => format!("${:02X}, #${:02X}", second & 0xFF, v & 0xFF),
+        "special-page" => format!("$FF{:02X}", v & 0xFF),
+        // SWEET 16 names its register in the mode: `r3`, `@r3`, `r3,immediate`.
+        register if register.starts_with('r') || register.starts_with('@') => {
+            match register.strip_suffix(",immediate") {
+                Some(register) => format!("{register}, ${:04X}", v & 0xFFFF),
+                None => register.to_string(),
+            }
+        }
+        other => other.to_string(),
+    };
+    if operand.is_empty() {
+        m
+    } else {
+        format!("{m} {operand}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4246,6 +4452,124 @@ mod tests {
                 "lda #$42",
                 "ldx #$1234"
             ]
+        );
+    }
+
+    /// Every ca65 CPU's sets, as Lang198x's ca65 front end pairs them.
+    fn ca65_sets() -> Vec<(
+        &'static str,
+        &'static isa::InstructionSet,
+        Option<&'static isa::InstructionSet>,
+    )> {
+        let base = &isa::mos6502::SET;
+        vec![
+            ("6502x", base, Some(&isa::nmos6502_undocumented::SET)),
+            ("6502dtv", base, Some(&isa::c64dtv2::CA65_SET)),
+            ("65sc02", base, Some(&isa::mos65c02::SET)),
+            ("65c02", base, Some(&isa::mos65c02::ROCKWELL_SET)),
+            ("w65c02", base, Some(&isa::mos65c02::WDC_SET)),
+            ("65ce02", base, Some(&isa::csg65ce02::SET)),
+            ("4510", base, Some(&isa::csg65ce02::CSG4502_SET)),
+            ("45gs02", base, Some(&isa::mega45gs02::SET)),
+            ("m740", base, Some(&isa::m740::SET)),
+            ("sweet16", &isa::sweet16::SET, None),
+        ]
+    }
+
+    /// Every form of every set decodes back to one whole instruction of
+    /// that form's length, never to data, so nothing is lost or merged.
+    #[test]
+    fn every_ca65_form_decodes_to_one_instruction() {
+        for (cpu, base, extension) in ca65_sets() {
+            for set in extension.into_iter().chain([base]) {
+                for insn in set.instructions {
+                    for form in insn.forms {
+                        let operands: usize = form.operands.iter().map(|o| o.bytes as usize).sum();
+                        // The 6502X's operand-less `DOP` and `TOP` are only
+                        // spellings: the processor reads the operand anyway.
+                        let longer = insn.forms.iter().any(|other| {
+                            other.opcode == form.opcode
+                                && other.operands.len() > form.operands.len()
+                        });
+                        if longer {
+                            continue;
+                        }
+                        let mut bytes = form.opcode.to_vec();
+                        bytes.extend((0..operands).map(|i| 0x12 + i as u8 * 0x22));
+                        let lines = disassemble_ca65(&bytes, 0x1000, base, extension);
+                        assert_eq!(
+                            lines.len(),
+                            1,
+                            "{cpu} {} {}: {lines:?}",
+                            insn.mnemonic,
+                            form.mode
+                        );
+                        assert!(!lines[0].text.starts_with(".byte"), "{cpu}: {lines:?}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ca65_forms_render_as_ca65_writes_them() {
+        let m740 = (&isa::mos6502::SET, Some(&isa::m740::SET));
+        let text =
+            |bytes: &[u8], (base, ext): (&isa::InstructionSet, Option<&isa::InstructionSet>)| {
+                disassemble_ca65(bytes, 0x1000, base, ext)
+                    .into_iter()
+                    .map(|line| line.text)
+                    .collect::<Vec<_>>()
+            };
+        assert_eq!(
+            text(
+                &[
+                    0x3A, 0x3C, 0x12, 0x34, 0x22, 0x0C, 0x03, 0xFE, 0x07, 0x40, 0xFB
+                ],
+                m740
+            ),
+            [
+                "inc a",
+                "ldm $34, #$12",
+                "jsr $FF0C",
+                "bbs0 a, $1006",
+                "bbs0 $40, $1006",
+            ]
+        );
+        let sweet16 = (&isa::sweet16::SET, None);
+        assert_eq!(
+            text(&[0x11, 0x34, 0x12, 0x41, 0x01, 0xFE, 0x00], sweet16),
+            ["set r1, $1234", "ld @r1", "br $1004", "rtn"]
+        );
+        let gs02 = (&isa::mos6502::SET, Some(&isa::mega45gs02::SET));
+        assert_eq!(
+            text(
+                &[
+                    0x42, 0x42, 0x0A, 0xEA, 0xB2, 0x12, 0xD3, 0x00, 0x01, 0x82, 0x0F, 0x0D, 0x34,
+                    0x00
+                ],
+                gs02
+            ),
+            [
+                "aslq",
+                "lda [$12],z",
+                "lbne $1108",
+                "sta ($0F,sp),y",
+                "ora a:$0034"
+            ]
+        );
+        // A byte that starts nothing is data.
+        assert_eq!(text(&[0x0D], sweet16), [".byte $0D"]);
+        // An instruction cut short by the end of the code is data too.
+        let x6502 = (&isa::mos6502::SET, Some(&isa::nmos6502_undocumented::SET));
+        assert_eq!(text(&[0x80], x6502), [".byte $80"]);
+        assert_eq!(
+            text(&[0x80, 0x12, 0x4B, 0x12], x6502),
+            ["nop #$12", "alr #$12"]
+        );
+        assert!(
+            listing_ca65(&[0x00], 0x0800, "sweet16", &isa::sweet16::SET, None)
+                .starts_with("        .setcpu \"sweet16\"\n        .org $0800\n")
         );
     }
 }
