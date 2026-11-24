@@ -1158,6 +1158,12 @@ const NEXT_INSTRUCTIONS: &[Instruction] = &[
     inst!("PIXELDN", "Advance HL to the next pixel row", [form(&[0xED, 0x93], "", NONE, Cycles::fixed(8), "")]),
     inst!("PIXELAD", "Compute pixel address into HL",    [form(&[0xED, 0x94], "", NONE, Cycles::fixed(8), "")]),
     inst!("SETAE",   "Set A to the E pixel mask",        [form(&[0xED, 0x95], "", NONE, Cycles::fixed(8), "")]),
+    // ZX Spectrum Next User Manual, 3rd ed., Appendix A (ED opcodes).
+    // The Next FPGA's JP_C uses port BC to set PC[13:6] and clears PC[5:0],
+    // leaving the post-fetch PC[15:14] and the flags unchanged.
+    inst!("JP",      "Jump using port BC to replace the low 14 bits of PC", [
+        form(&[0xED, 0x98], "(C)", NONE, Cycles::fixed(13), ""),
+    ]),
     inst!("LDIX",    "Block load (transparent), inc",    [form(&[0xED, 0xA4], "", NONE, Cycles::fixed(16), "")]),
     inst!("LDWS",    "Load word, special",               [form(&[0xED, 0xA5], "", NONE, Cycles::fixed(14), "")]),
     inst!("LDDX",    "Block load (transparent), dec",    [form(&[0xED, 0xAC], "", NONE, Cycles::fixed(16), "")]),
@@ -1219,6 +1225,28 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn z80n_jp_via_port_is_next_only() {
+        let jump = NEXT.find_form("JP", "(C)").expect("Z80N JP (C)");
+        assert!(jump.exemplar().eq([0xED, 0x98]));
+        assert_eq!(
+            (
+                jump.cycles.base,
+                jump.cycles.page_cross,
+                jump.cycles.branch_taken
+            ),
+            (13, 0, 0)
+        );
+        assert_eq!(jump.flags, "");
+        assert!(!jump.undocumented);
+        assert!(SET.find_form("JP", "(C)").is_none());
+        assert!(NEXT.find_form("JP", "C,nn").is_none());
+        assert_eq!(
+            SET.find_form("JP", "C,nn").map(|f| f.opcode),
+            Some(&[0xDA][..])
+        );
     }
 
     /// Spot-checks transcribed from the Fuse/ZEXALL-validated Emu198x decoder.

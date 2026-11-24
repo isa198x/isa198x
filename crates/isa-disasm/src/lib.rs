@@ -4078,6 +4078,21 @@ mod tests {
     }
 
     #[test]
+    fn z80n_jp_via_port_is_next_only() {
+        let bytes = [0xED, 0x98, 0xDA, 0x34, 0x12];
+        let next = disassemble_z80(&bytes, 0x8000, true);
+        assert_eq!(next.len(), 2);
+        assert_eq!(next[0].text, "JP (C)");
+        assert_eq!(next[0].bytes, [0xED, 0x98]);
+        assert_eq!(next[1].addr, 0x8002);
+        assert_eq!(next[1].text, "JP C,$1234");
+
+        let classic = disassemble_z80(&bytes, 0x8000, false);
+        assert_eq!(classic[0].text, "DEFB $ED");
+        assert!(classic.iter().all(|line| line.text != "JP (C)"));
+    }
+
+    #[test]
     fn relative_branch_targets_are_absolute() {
         // JR at $8000, length 2, offset +5 -> target $8007.
         assert_eq!(one(&[0x18, 0x05]), "JR $8007");
