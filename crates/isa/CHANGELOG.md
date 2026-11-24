@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.12](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.11...isa198x-v0.1.12) - 2026-11-24
+
+### Fixed
+
+- *(z80n)* specify the Next JP (C) opcode
+
 ## [0.1.10](https://github.com/isa198x/isa198x/compare/isa198x-v0.1.9...isa198x-v0.1.10) - 2026-11-01
 
 ### Added
